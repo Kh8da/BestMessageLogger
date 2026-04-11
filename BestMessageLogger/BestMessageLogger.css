@@ -729,3 +729,31 @@
         white-space: normal;
     }
 }
+
+.vc-bml-list {
+    overflow-x: hidden !important;
+}
+
+.vc-bml-card {
+    min-width: 0;
+}
+
+.vc-bml-author,
+.vc-bml-loc,
+.vc-bml-preview,
+.vc-bml-message,
+.vc-bml-infoValue,
+.vc-bml-mediaLabel {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.vc-bml-cardTop > div:first-child {
+    min-width: 0;
+}
+
+.vc-bml-body,
+.vc-bml-detail,
+.vc-bml-list {
+    min-width: 0;
+}
