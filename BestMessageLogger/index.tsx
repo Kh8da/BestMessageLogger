@@ -1221,9 +1221,28 @@ function onMessageCreate(event: { message?: any; optimistic?: boolean; }) {
 function onMessageUpdateEvent(event: { message?: any; }) {
     const msg = event?.message;
     if (!msg?.id || !msg?.channel_id || msg.__bmlSynthetic) return;
+
     const key = getLiveKey(String(msg.channel_id), String(msg.id));
     const prev = LIVE_MESSAGE_CACHE.get(key);
-    LIVE_MESSAGE_CACHE.set(key, { ...(prev ?? {}), ...cloneRawMessage(msg) });
+
+    const merged = {
+        ...(prev ?? {}),
+        ...cloneRawMessage(msg)
+    };
+
+    LIVE_MESSAGE_CACHE.set(key, merged);
+
+    if (
+        settings.store.logEdits &&
+        prev &&
+        msg.edited_timestamp &&
+        typeof prev.content === "string" &&
+        typeof merged.content === "string" &&
+        prev.content !== merged.content &&
+        !shouldIgnore(merged, true)
+    ) {
+        collectOverlayEdit(prev, merged);
+    }
 }
 
 function rehydrateDeletedForChannel(channelId?: string | null) {
