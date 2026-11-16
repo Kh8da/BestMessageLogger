@@ -12,7 +12,7 @@ import { diffWords, plainPreview, readableText, RenderContext, renderMarkdown } 
 import { settings } from "./settings";
 import { clearTab, entries, entryMessage, entryTime, exportJson, getEntry, getSavedMediaBlob, getVersion, onLogsChanged, removeEntries } from "./store";
 import type { LogEmbed, LogEntry, LogMedia, LogMessage, Scope, Tab } from "./types";
-import { escapeHtml, formatBytes, formatDate, formatShort, getChannelLabel, getGuildInfo, isDmMessage, logger, messageLink, safeUrl, userAvatarUrl } from "./utils";
+import { discordMediaUrl, escapeHtml, formatBytes, formatDate, formatShort, getChannelLabel, getGuildInfo, isDmMessage, logger, messageLink, safeUrl, userAvatarUrl } from "./utils";
 
 const BRAND_NAME = "Kh8da";
 const BRAND_LINK = "https://kh8da.com";
@@ -735,13 +735,13 @@ function embedHtml(embed: LogEmbed, ctx: RenderContext): string {
             ? `<a class="vc-bml-embedTitle" href="${escapeHtml(safeUrl(embed.url))}" target="_blank" rel="noreferrer noopener">${renderMarkdown(embed.title, ctx)}</a>`
             : `<div class="vc-bml-embedTitle">${renderMarkdown(embed.title, ctx)}</div>`)
         : "";
-    const image = safeUrl(embed.image);
-    const thumb = safeUrl(embed.thumbnail);
+    const image = discordMediaUrl(embed.image);
+    const thumb = discordMediaUrl(embed.thumbnail);
 
     return `<div class="vc-bml-embed" ${color ? `style="--vc-bml-embed-color:${color}"` : ""}>
         <div class="vc-bml-embedMain">
             ${embed.providerName ? `<div class="vc-bml-embedProvider">${escapeHtml(embed.providerName)}</div>` : ""}
-            ${embed.authorName ? `<div class="vc-bml-embedAuthor">${safeUrl(embed.authorIcon) ? `<img src="${escapeHtml(safeUrl(embed.authorIcon))}" alt="" loading="lazy" />` : ""}${escapeHtml(embed.authorName)}</div>` : ""}
+            ${embed.authorName ? `<div class="vc-bml-embedAuthor">${discordMediaUrl(embed.authorIcon) ? `<img src="${escapeHtml(discordMediaUrl(embed.authorIcon))}" alt="" loading="lazy" />` : ""}${escapeHtml(embed.authorName)}</div>` : ""}
             ${title}
             ${embed.description ? `<div class="vc-bml-embedDesc vc-bml-markdown">${renderMarkdown(embed.description, ctx)}</div>` : ""}
             ${embed.fields.length ? `<div class="vc-bml-embedFields">${embed.fields.map(f => `<div class="vc-bml-embedField ${f.inline ? "vc-bml-inline" : ""}"><div class="vc-bml-embedFieldName">${renderMarkdown(f.name, ctx)}</div><div class="vc-bml-markdown">${renderMarkdown(f.value, ctx)}</div></div>`).join("")}</div>` : ""}
@@ -761,7 +761,7 @@ function mediaHtml(list: LogMedia[], group: string): string {
         : '<span class="vc-bml-online" title="Loaded from Discord. The link can stop working after a while.">Online</span>';
 
     const visualHtml = visual.map(m => {
-        const src = escapeHtml(m.kind === "image" ? m.proxyUrl || m.url : m.url || m.proxyUrl);
+        const src = escapeHtml(m.kind === "image" ? discordMediaUrl(m.proxyUrl, m.url) : discordMediaUrl(m.url, m.proxyUrl));
         const ratio = m.width && m.height ? `style="aspect-ratio:${m.width}/${m.height}"` : "";
         const inner = m.kind === "image"
             ? `<button class="vc-bml-mediaOpen" data-action="lightbox" data-type="image" ${ref(m)}><img class="vc-bml-mediaEl" ${ref(m)} src="${src}" alt="${escapeHtml(m.filename)}" loading="lazy" draggable="false" ${ratio} /></button>`
@@ -778,7 +778,7 @@ function mediaHtml(list: LogMedia[], group: string): string {
     const otherHtml = other.map(m => {
         const icon = m.kind === "audio" ? ICONS.audio : ICONS.file;
         const player = m.kind === "audio"
-            ? `<audio class="vc-bml-mediaEl vc-bml-audio" ${ref(m)} src="${escapeHtml(m.url || m.proxyUrl)}" controls preload="metadata"></audio>`
+            ? `<audio class="vc-bml-mediaEl vc-bml-audio" ${ref(m)} src="${escapeHtml(discordMediaUrl(m.url, m.proxyUrl))}" controls preload="metadata"></audio>`
             : "";
         return `<div class="vc-bml-fileItem">
             <div class="vc-bml-fileRow">

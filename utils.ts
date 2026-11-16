@@ -27,6 +27,24 @@ export function safeUrl(url: unknown): string {
     return /^(https?:|blob:)/i.test(s) ? s : "";
 }
 
+const DISCORD_MEDIA_HOST = /^(cdn\.discordapp\.com|media\.discordapp\.net|images-ext-\d+\.discordapp\.net)$/i;
+
+/**
+ * Picks the first url that Discord itself serves (or a local blob). Media is never loaded
+ * straight from third party sites, so they can't see your IP address.
+ */
+export function discordMediaUrl(...urls: Array<string | null | undefined>): string {
+    for (const url of urls) {
+        if (!url) continue;
+        if (url.startsWith("blob:")) return url;
+        try {
+            const parsed = new URL(url);
+            if (parsed.protocol === "https:" && DISCORD_MEDIA_HOST.test(parsed.hostname)) return url;
+        } catch { }
+    }
+    return "";
+}
+
 export function toIso(value: unknown): string | null {
     if (value == null || value === "") return null;
     if (typeof value === "string") return value;

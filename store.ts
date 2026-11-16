@@ -7,7 +7,7 @@ import * as DataStore from "@api/DataStore";
 
 import { settings } from "./settings";
 import type { DeleteEntry, EditEntry, GhostPingEntry, LogEntry, LogMedia, LogMessage, Tab } from "./types";
-import { logger, userAvatarUrl } from "./utils";
+import { discordMediaUrl, logger, userAvatarUrl } from "./utils";
 
 /*
  * Logs live in IndexedDB (one record per entry), not in localStorage: the Discord desktop app
@@ -388,7 +388,7 @@ export function saveMediaOffline(message: LogMessage, media: LogMedia[] = messag
     for (const item of media) {
         if (item.saved || (item.size && item.size > maxBytes)) continue;
         downloadQueue.push(async () => {
-            const blob = await fetchBlob([item.url, item.proxyUrl], maxBytes);
+            const blob = await fetchBlob([discordMediaUrl(item.proxyUrl), discordMediaUrl(item.url)], maxBytes);
             if (!blob) return;
             try {
                 await DataStore.set(mediaKey(message.id, item), blob, getMediaDb());
