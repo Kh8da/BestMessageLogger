@@ -60,6 +60,18 @@ export const settings = definePluginSettings({
         description: "Save images, videos, audio and files of deleted messages on this computer, so they still open after Discord removes them.",
         default: true
     },
+    cacheMedia: {
+        type: OptionType.BOOLEAN,
+        description: "Keep a temporary copy of the media in channels you open and in your DMs. Discord removes files the moment a message is deleted, so this is what makes saving them reliable.",
+        default: true
+    },
+    mediaCacheMB: {
+        type: OptionType.SLIDER,
+        description: "Disk space (in MB) the temporary media cache may use. The oldest files are removed first, and nothing is kept longer than 7 days.",
+        default: 512,
+        markers: [128, 256, 512, 1024, 2048],
+        stickToMarkers: true
+    },
     maxMediaSizeMB: {
         type: OptionType.SLIDER,
         description: "Largest single file (in MB) to save from a deleted message.",

@@ -33,7 +33,7 @@ It started as my first Vencord plugin: a better version of the built-in MessageL
 - Works with bulk deletes, replies, forwards, bot embeds, stickers, polls and new bot message layouts (components v2).
 
 ### Saved images, videos and audio
-- When a message is deleted, its **attachments are saved on your computer** right away.
+- Media in the channels you open and in your DMs is **kept in a temporary cache**, so when a message is deleted its files are already on your computer. Discord removes files the moment a message is deleted, so downloading them afterwards often fails.
 - Deleted images, videos, voice messages and audio files still open and play after Discord's link stops working.
 - Each file shows **Saved** or **Online**, with a download button. You choose the size limit in settings.
 
@@ -153,6 +153,8 @@ Then restart Discord (or press Ctrl+R).
 | Inline edits | Show edit history below messages in chat | On |
 | Log ghost pings | Track deleted or edited messages that pinged you | On |
 | Save media | Save images, videos, audio and files of deleted messages | On |
+| Cache media | Keep a temporary copy of media in channels you open and in DMs, so deleted files can always be saved | On |
+| Media cache size | Disk space the temporary cache may use, in MB (oldest files go first, nothing older than 7 days) | 512 |
 | Max media size | Largest single file to save, in MB | 25 |
 | Ignore bots / yourself | Skip messages from bots or from you | Off |
 | Ignore users, channels, servers | Comma-separated IDs to skip | Empty |
@@ -183,7 +185,7 @@ No. Everything happens inside your own Discord app. The plugin sends nothing to 
 <details>
 <summary><b>Why do deleted images still work?</b></summary>
 
-When a message is deleted, the plugin immediately downloads its attachments from Discord and stores them on your computer. Discord's own links usually stop working a little later.
+Discord removes a message's files as soon as it's deleted. BestMessageLogger keeps a temporary copy of the media in channels you open and in your DMs, so when something is deleted, its files are already on your computer and move into the log. If a file wasn't cached, it tries to download it, and then falls back to the preview the chat already showed.
 </details>
 
 <details>

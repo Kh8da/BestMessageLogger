@@ -20,6 +20,7 @@ import { AuthenticationStore, FluxDispatcher, Menu, MessageStore, showToast, Tim
 import { isEphemeral, shouldIgnore } from "./capture";
 import { startCapture, stopCapture } from "./capture-handlers";
 import { openHistoryModal } from "./HistoryModal";
+import { startMediaCache, stopMediaCache } from "./media-cache";
 import { destroyOverlay, openOverlay, setupHotkey, teardownHotkey, toggleOverlay } from "./overlay";
 import { settings } from "./settings";
 import { clearAll, entries, exportJson, findEntryForMessage, flush, loadLogs, prune, resetLoaded } from "./store";
@@ -158,6 +159,7 @@ export default definePlugin({
             showToast({ text: "Turn off Vencord's MessageLogger: it conflicts with BestMessageLogger.", variant: "critical", duration: 8000 });
         }
         applyDeleteStyle();
+        startMediaCache();
         startCapture();
         setupHotkey();
         exposeApi();
@@ -168,6 +170,7 @@ export default definePlugin({
 
     stop() {
         stopCapture();
+        stopMediaCache();
         teardownHotkey();
         destroyOverlay();
         removeDeleteStyle();

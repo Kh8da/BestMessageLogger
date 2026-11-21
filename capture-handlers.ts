@@ -7,6 +7,7 @@ import { updateMessage } from "@api/MessageUpdater";
 import { ChannelStore, FluxDispatcher, MessageStore } from "@webpack/common";
 
 import { cacheRaw, clearRawCache, forgetRaw, getCachedRaw, isEphemeral, looksLikeApiMessage, noteServerTime, pingsMe, rawToLog, sanitizeForChat, serverNowIso, shouldIgnore, toRaw } from "./capture";
+import { cacheMessageMedia, isWatchedChannel } from "./media-cache";
 import { settings } from "./settings";
 import { addDelete, addEdit, addGhostPing, findDeleteEntry, getRestorableDeletes, saveMediaOffline, updateEntry } from "./store";
 import type { DeleteEntry, RawMessage } from "./types";
@@ -82,6 +83,9 @@ function handleAction(action: any) {
             if (!action.optimistic) {
                 cacheRaw(action.message);
                 noteServerTime(action.message?.timestamp);
+                if (action.message?.channel_id && isWatchedChannel(String(action.message.channel_id))) {
+                    cacheMessageMedia(action.message);
+                }
             }
             break;
         case "MESSAGE_UPDATE":
@@ -110,6 +114,8 @@ function onMessageUpdate(message: any) {
 
     // Partial updates (embeds loading) only refresh the cache
     if (cached || message.author) cacheRaw(message);
+    // links and gifs get their embeds in a later update
+    if (message.embeds?.length && isWatchedChannel(channelId)) cacheMessageMedia(getCachedRaw(id) ?? message);
 
     if (!previous || isEphemeral(message) || previous.deleted) return;
     if (typeof message.content !== "string" || !message.edited_timestamp) return;
@@ -221,7 +227,10 @@ function logDelete(source: any, channelId: string, isBulk: boolean) {
  */
 function onMessagesLoaded(action: any) {
     const messages: any[] = Array.isArray(action.messages) ? action.messages : [];
-    for (const m of messages) cacheRaw(m);
+    for (const m of messages) {
+        cacheRaw(m);
+        cacheMessageMedia(m);
+    }
 
     if (!settings.store.restoreDeletedInChat || !usingInterceptor || !action.channelId) return;
     const channelId = String(action.channelId);

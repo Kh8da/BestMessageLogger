@@ -5,6 +5,7 @@
 
 import * as DataStore from "@api/DataStore";
 
+import { fetchBlob, takeCachedMedia } from "./media-cache";
 import { settings } from "./settings";
 import type { DeleteEntry, EditEntry, GhostPingEntry, LogEntry, LogMedia, LogMessage, Tab } from "./types";
 import { discordMediaUrl, logger, userAvatarUrl } from "./utils";
@@ -359,36 +360,47 @@ function pumpDownloads() {
     }
 }
 
-async function fetchBlob(urls: string[], maxBytes: number): Promise<Blob | null> {
-    for (const url of urls) {
-        if (!url || !/^https:/i.test(url)) continue;
-        try {
-            const res = await fetch(url, { cache: "force-cache" });
-            if (!res.ok) continue;
-            const length = Number(res.headers.get("content-length") || 0);
-            if (length && length > maxBytes) return null;
-            const blob = await res.blob();
-            if (blob.size > maxBytes || blob.size === 0) continue;
-            return blob;
-        } catch {
-            // CORS or network failure, try the next url
-        }
-    }
-    return null;
+/**
+ * Media urls the chat already showed for a message. The app has these loaded, so they still
+ * work for a while after Discord removes the original files. Keyed by attachment id.
+ */
+function urlsShownInChat(message: LogMessage): Map<string, string[]> {
+    const found = new Map<string, string[]>();
+    const element = document.getElementById(`chat-messages-${message.channelId}-${message.id}`);
+    if (!element) return found;
+    element.querySelectorAll<HTMLElement>("img, video, source, a[href]").forEach(el => {
+        const url = (el as HTMLImageElement).currentSrc || (el as HTMLImageElement).src || (el as HTMLAnchorElement).href || "";
+        const attachmentId = /\/attachments\/\d+\/(\d+)\//.exec(url)?.[1];
+        if (!attachmentId || !discordMediaUrl(url)) return;
+        const list = found.get(attachmentId) ?? [];
+        if (!list.includes(url)) list.push(url);
+        found.set(attachmentId, list);
+    });
+    return found;
+}
+
+function attachmentIdOf(item: LogMedia): string | null {
+    return /att-(\d+)$/.exec(item.key)?.[1] ?? null;
 }
 
 /**
- * Downloads the media of a deleted message right away, before Discord's CDN drops it,
- * and keeps the copy in IndexedDB.
+ * Keeps the media of a deleted message on this computer. It uses, in order: the copy the media
+ * cache made before the delete, a fresh download, and the preview the chat already loaded.
  */
 export function saveMediaOffline(message: LogMessage, media: LogMedia[] = message.media) {
     if (!settings.store.saveMedia) return;
     const maxBytes = Math.max(1, settings.store.maxMediaSizeMB || 25) * 1024 * 1024;
+    // read the chat now, while the message is still on screen
+    const shown = urlsShownInChat(message);
 
     for (const item of media) {
         if (item.saved || (item.size && item.size > maxBytes)) continue;
+        const attachmentId = attachmentIdOf(item);
+        const previews = attachmentId ? shown.get(attachmentId) ?? [] : [];
         downloadQueue.push(async () => {
-            const blob = await fetchBlob([discordMediaUrl(item.proxyUrl), discordMediaUrl(item.url)], maxBytes);
+            const blob = await takeCachedMedia(message.id, item)
+                ?? await fetchBlob([discordMediaUrl(item.proxyUrl), discordMediaUrl(item.url)], maxBytes)
+                ?? await fetchBlob(previews, maxBytes);
             if (!blob) return;
             try {
                 await DataStore.set(mediaKey(message.id, item), blob, getMediaDb());
